@@ -1,0 +1,14 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "HFaviedWxt7AUNVfIU6Vd"
+uri = "file://artifacts/xomogambia/assets/images/icon.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "1IoCV9P8BNFlbzi3AAEcX"
+uri = "file://artifacts/xomogambia/assets/images/hero-services.png"
+type = "image"
+title = "generated_image"

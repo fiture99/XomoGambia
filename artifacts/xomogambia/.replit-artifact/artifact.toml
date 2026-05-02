@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "XomoGambia"
+version = "1.0.0"
+id = "artifacts/xomogambia"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 24933
+
+[services.development]
+run = "pnpm --filter @workspace/xomogambia run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/xomogambia", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/xomogambia", "run", "serve" ]
+
+[services.env]
+PORT = "24933"
+BASE_PATH = "/"
