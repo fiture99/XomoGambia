@@ -113,5 +113,27 @@
     "reviewCount": 0,
     "completedJobs": 0,
     "submittedAt": "2026-05-03T08:20:16.049Z"
+  },
+  {
+    "id": "api-17777968150334nry",
+    "name": "L",
+    "categoryIds": [
+      "electrical"
+    ],
+    "description": "BBC Bnjul jgggh hjcggggfgfhhggffghjjgfffzfhhf",
+    "location": "Hvv",
+    "phone": "+220 3167095",
+    "services": [
+      "G"
+    ],
+    "yearsActive": 5,
+    "submitterName": "Haja",
+    "submitterEmail": "Haj@gmail.com",
+    "approvalStatus": "approved",
+    "verified": true,
+    "rating": 0,
+    "reviewCount": 0,
+    "completedJobs": 0,
+    "submittedAt": "2026-05-03T08:26:55.033Z"
   }
 ]
