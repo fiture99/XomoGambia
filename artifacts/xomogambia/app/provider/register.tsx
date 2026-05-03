@@ -35,6 +35,9 @@ export default function ProviderRegisterScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
+  const currentEmailTaken = !!user?.email && isCompanyEmailTaken(user.email);
+  const currentCompanyAlreadyRegistered = !!user?.companyId;
+
   function toggleCategory(id: string) {
     Haptics.selectionAsync();
     setSelectedCategories((prev) =>
@@ -42,13 +45,18 @@ export default function ProviderRegisterScreen() {
     );
   }
 
+  React.useEffect(() => {
+    if (currentCompanyAlreadyRegistered) setError("You have already registered a company.");
+    else if (currentEmailTaken) setError("This email is already registered.");
+  }, [currentCompanyAlreadyRegistered, currentEmailTaken]);
+
   async function handleSubmit() {
     setError("");
+    if (currentCompanyAlreadyRegistered) { setError("You have already registered a company."); return; }
+    if (currentEmailTaken) { setError("This email is already registered."); return; }
     if (!companyName.trim()) { setError("Company name is required."); return; }
     if (selectedCategories.length === 0) { setError("Please select at least one service category."); return; }
     if (!location.trim()) { setError("Please enter your operating location."); return; }
-    if (user?.email && isCompanyEmailTaken(user.email)) { setError("This email is already registered."); return; }
-    if (user?.companyId) { setError("You have already registered a company."); return; }
     if (!phone.trim() || phone.trim().length < 8) { setError("Please enter a valid phone number."); return; }
     if (isCompanyPhoneTaken(phone.trim())) { setError("This phone number is already registered."); return; }
     if (!description.trim() || description.trim().length < 30) { setError("Please write a description of at least 30 characters."); return; }
@@ -81,8 +89,9 @@ export default function ProviderRegisterScreen() {
       const result = await submitProviderRegistration(payload);
       companyId = result.id;
     } catch {
-      const localCompany = addCompany(payload);
-      companyId = localCompany.id;
+      setError("Registration failed. Please try again.");
+      setSubmitting(false);
+      return;
     }
 
     await updateUser({ companyId });
