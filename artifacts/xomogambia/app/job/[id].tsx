@@ -41,6 +41,7 @@ export default function JobDetailScreen() {
   const insets = useSafeAreaInsets();
   const { jobs, updateJobStatus, getCompany } = useApp();
 
+
   const job = useMemo(() => jobs.find((j) => j.id === id), [jobs, id]);
   const company = useMemo(() => getCompany(job?.companyId ?? ""), [job, getCompany]);
   const primaryCategory = CATEGORIES.find((c) => c.id === job?.categoryId);
@@ -56,6 +57,7 @@ export default function JobDetailScreen() {
   const currentStepIndex = STEPS.findIndex((s) => s.key === job.status);
   const isComplete = job.status === "completed";
   const isCancelled = job.status === "cancelled";
+  const isPaid = job.paymentStatus === "paid";
 
   function handleAdvanceStatus() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -173,14 +175,52 @@ export default function JobDetailScreen() {
         <View
           style={[styles.amountCard, { backgroundColor: colors.primary + "12", borderColor: colors.primary + "30" }]}
         >
-          <Text style={[styles.amountLabel, { color: colors.mutedForeground }]}>Contract Value</Text>
-          <Text style={[styles.amountValue, { color: colors.primary }]}>
-            D {job.amount.toLocaleString()}
-          </Text>
+          <View>
+            <Text style={[styles.amountLabel, { color: colors.mutedForeground }]}>Contract Value</Text>
+            <Text style={[styles.amountValue, { color: colors.primary }]}>
+              D {job.amount.toLocaleString()}
+            </Text>
+          </View>
+          {isPaid && (
+            <View style={styles.paidBadge}>
+              <Feather name="check-circle" size={13} color="#15803D" />
+              <Text style={styles.paidBadgeText}>PAID</Text>
+            </View>
+          )}
         </View>
 
-        {/* Leave review if completed */}
-        {isComplete && !job.reviewed && (
+        {/* Payment info if paid */}
+        {isPaid && job.paymentMethod && (
+          <View style={[styles.paymentInfoCard, { backgroundColor: "#F0FDF4", borderColor: "#BBF7D0" }]}>
+            <Feather name="credit-card" size={16} color="#15803D" />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.paymentInfoText, { color: "#15803D" }]}>
+                Paid via {job.paymentMethod}
+              </Text>
+              {job.transactionRef && (
+                <Text style={[styles.paymentInfoRef, { color: "#166534" }]}>Ref: {job.transactionRef}</Text>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Pay Now button if completed and unpaid */}
+        {isComplete && !isPaid && (
+          <TouchableOpacity
+            style={[styles.payBtn, { backgroundColor: colors.primary }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push(`/payment/${job.id}`);
+            }}
+            activeOpacity={0.85}
+          >
+            <Feather name="credit-card" size={18} color="#fff" />
+            <Text style={styles.payBtnText}>Pay Now · D {job.amount.toLocaleString()}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Leave review if completed and paid */}
+        {isComplete && isPaid && !job.reviewed && (
           <TouchableOpacity
             style={[styles.reviewBtn, { backgroundColor: colors.accent }]}
             onPress={() => {
@@ -303,6 +343,13 @@ const styles = StyleSheet.create({
   reviewedText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   demoBox: { borderRadius: 12, borderWidth: 1, padding: 14, flexDirection: "row", gap: 8, alignItems: "flex-start" },
   demoText: { fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
+  paidBadge: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#DCFCE7", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
+  paidBadgeText: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#15803D" },
+  paymentInfoCard: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 12 },
+  paymentInfoText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  paymentInfoRef: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
+  payBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", borderRadius: 14, paddingVertical: 16, gap: 8, marginBottom: 12 },
+  payBtnText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#fff" },
   actionBar: {
     position: "absolute",
     bottom: 0,

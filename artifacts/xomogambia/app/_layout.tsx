@@ -52,6 +52,7 @@ function RootLayoutNav() {
       <Stack.Screen name="review/new" options={{ headerShown: false }} />
       <Stack.Screen name="provider/register" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
+      <Stack.Screen name="payment/[jobId]" options={{ headerShown: false }} />
     </Stack>
   );
 }

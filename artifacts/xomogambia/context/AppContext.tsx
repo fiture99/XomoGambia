@@ -62,6 +62,10 @@ export interface Job {
   completedDate?: string;
   createdAt: string;
   reviewed: boolean;
+  paymentStatus?: "unpaid" | "paid";
+  paymentMethod?: string;
+  transactionRef?: string;
+  paidAt?: string;
 }
 
 export const CATEGORIES: ServiceCategory[] = [
@@ -226,6 +230,7 @@ interface AppContextType {
   updateJobStatus: (id: string, status: Job["status"]) => void;
   addReview: (review: Omit<Review, "id" | "date">) => void;
   markJobReviewed: (jobId: string) => void;
+  markJobPaid: (jobId: string, paymentMethod: string, transactionRef: string) => void;
   userReviews: Review[];
 }
 
@@ -244,6 +249,7 @@ const AppContext = createContext<AppContextType>({
   updateJobStatus: () => {},
   addReview: () => {},
   markJobReviewed: () => {},
+  markJobPaid: () => {},
   userReviews: [],
 });
 
@@ -389,6 +395,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [jobs, saveJobs]
   );
 
+  const markJobPaid = useCallback(
+    (jobId: string, paymentMethod: string, transactionRef: string) => {
+      saveJobs(
+        jobs.map((j) =>
+          j.id === jobId
+            ? { ...j, paymentStatus: "paid", paymentMethod, transactionRef, paidAt: new Date().toISOString() }
+            : j
+        )
+      );
+    },
+    [jobs, saveJobs]
+  );
+
   return (
     <AppContext.Provider
       value={{
@@ -406,6 +425,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateJobStatus,
         addReview,
         markJobReviewed,
+        markJobPaid,
         userReviews,
       }}
     >
