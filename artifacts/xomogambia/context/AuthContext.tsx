@@ -12,6 +12,8 @@ export interface User {
   companyId?: string;
 }
 
+type StoredUserMap = Record<string, User>;
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -35,13 +37,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    AsyncStorage.getItem("xomo_user")
+    AsyncStorage.getItem("xomo_users")
       .then((data) => {
-        if (data) setUser(JSON.parse(data));
+        if (!data) return;
+        const users: StoredUserMap = JSON.parse(data);
+        const values = Object.values(users);
+        if (values.length > 0) setUser(values[values.length - 1]);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  async function readUsers(): Promise<StoredUserMap> {
+    const data = await AsyncStorage.getItem("xomo_users");
+    if (!data) return {};
+    return JSON.parse(data);
+  }
+
+  async function saveUsers(users: StoredUserMap) {
+    await AsyncStorage.setItem("xomo_users", JSON.stringify(users));
+  }
 
   async function login(name: string, email: string, role: UserRole, password?: string, companyId?: string) {
     const newUser: User = {
@@ -52,15 +67,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
       companyId,
     };
-    await AsyncStorage.setItem("xomo_user", JSON.stringify(newUser));
+    const users = await readUsers();
+    users[newUser.email.toLowerCase()] = newUser;
+    await saveUsers(users);
     setUser(newUser);
   }
 
   async function loginWithCredentials(email: string, password: string): Promise<boolean> {
-    const data = await AsyncStorage.getItem("xomo_user");
-    if (!data) return false;
-    const stored: User = JSON.parse(data);
-    if (stored.email.toLowerCase() === email.toLowerCase() && stored.password === password) {
+    const users = await readUsers();
+    const stored = users[email.toLowerCase()];
+    if (stored && stored.password === password) {
       setUser(stored);
       return true;
     }
@@ -70,12 +86,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function updateUser(updates: Partial<User>) {
     if (!user) return;
     const updated = { ...user, ...updates };
-    await AsyncStorage.setItem("xomo_user", JSON.stringify(updated));
+    const users = await readUsers();
+    users[updated.email.toLowerCase()] = updated;
+    await saveUsers(users);
     setUser(updated);
   }
 
   async function logout() {
-    await AsyncStorage.removeItem("xomo_user");
     setUser(null);
   }
 
