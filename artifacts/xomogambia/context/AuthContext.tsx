@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 export type UserRole = "customer" | "provider";
 
@@ -19,6 +19,8 @@ interface AuthContextType {
   loading: boolean;
   login: (name: string, email: string, role: UserRole, password?: string, companyId?: string) => Promise<void>;
   loginWithCredentials: (email: string, password: string) => Promise<boolean>;
+  getStoredUser: (email: string) => Promise<User | null>;
+  getLastUser: () => Promise<User | null>;
   updateUser: (updates: Partial<User>) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -28,6 +30,8 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   login: async () => {},
   loginWithCredentials: async () => false,
+  getStoredUser: async () => null,
+  getLastUser: async () => null,
   updateUser: async () => {},
   logout: async () => {},
 });
@@ -48,15 +52,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function readUsers(): Promise<StoredUserMap> {
+  const readUsers = useCallback(async (): Promise<StoredUserMap> => {
     const data = await AsyncStorage.getItem("xomo_users");
     if (!data) return {};
     return JSON.parse(data);
-  }
+  }, []);
 
-  async function saveUsers(users: StoredUserMap) {
+  const saveUsers = useCallback(async (users: StoredUserMap) => {
     await AsyncStorage.setItem("xomo_users", JSON.stringify(users));
-  }
+  }, []);
 
   async function login(name: string, email: string, role: UserRole, password?: string, companyId?: string) {
     const newUser: User = {
@@ -83,6 +87,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return false;
   }
 
+  async function getStoredUser(email: string): Promise<User | null> {
+    const users = await readUsers();
+    return users[email.toLowerCase()] ?? null;
+  }
+
+  async function getLastUser(): Promise<User | null> {
+    const users = await readUsers();
+    const values = Object.values(users);
+    return values.length > 0 ? values[values.length - 1] : null;
+  }
+
   async function updateUser(updates: Partial<User>) {
     if (!user) return;
     const updated = { ...user, ...updates };
@@ -97,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginWithCredentials, updateUser, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithCredentials, getStoredUser, getLastUser, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

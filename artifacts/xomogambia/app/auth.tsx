@@ -29,7 +29,7 @@ export default function AuthScreen() {
   const isRegister = mode !== "login";
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { login, loginWithCredentials } = useAuth();
+  const { login, loginWithCredentials, getStoredUser, getLastUser, user } = useAuth();
   const { isCompanyEmailTaken } = useApp();
 
   const [step, setStep] = useState<Step>(isRegister ? "role" : "details");
@@ -59,7 +59,12 @@ export default function AuthScreen() {
   async function handleBiometricLogin() {
     const ok = await authenticateWithBiometrics();
     if (ok) {
-      router.replace("/(tabs)");
+      const stored = user ?? (await getLastUser());
+      if (stored) {
+        router.replace(stored.role === "provider" ? "/(tabs)" : "/(tabs)");
+      } else {
+        setError("No saved account was found. Please sign in with your password first.");
+      }
     } else {
       setError("Biometric authentication failed. Please use your password.");
     }
@@ -93,8 +98,9 @@ export default function AuthScreen() {
       setLoading(true);
       try {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        const stored = await getStoredUser(email.trim());
         const ok = await loginWithCredentials(email.trim(), password);
-        if (ok) {
+        if (ok && stored) {
           router.replace("/(tabs)");
         } else {
           setError("Incorrect email or password. Please try again.");
