@@ -209,6 +209,15 @@ interface AppContextType {
   getCompany: (id: string) => Company | undefined;
   getCompaniesByCategory: (categoryId: string) => Company[];
   getReviews: (companyId: string) => Review[];
+  addCompany: (data: {
+    name: string;
+    categoryIds: string[];
+    description: string;
+    location: string;
+    phone: string;
+    services: string[];
+    yearsActive: number;
+  }) => Company;
   quotes: QuoteRequest[];
   addQuote: (quote: Omit<QuoteRequest, "id" | "createdAt">) => void;
   updateQuoteStatus: (id: string, status: QuoteRequest["status"], amount?: number) => void;
@@ -226,6 +235,7 @@ const AppContext = createContext<AppContextType>({
   getCompany: () => undefined,
   getCompaniesByCategory: () => [],
   getReviews: () => [],
+  addCompany: () => { throw new Error("addCompany not initialized"); },
   quotes: [],
   addQuote: () => {},
   updateQuoteStatus: () => {},
@@ -241,16 +251,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [userReviews, setUserReviews] = useState<Review[]>([]);
+  const [extraCompanies, setExtraCompanies] = useState<Company[]>([]);
 
   useEffect(() => {
     Promise.all([
       AsyncStorage.getItem("xomo_quotes"),
       AsyncStorage.getItem("xomo_jobs"),
       AsyncStorage.getItem("xomo_user_reviews"),
-    ]).then(([q, j, r]) => {
+      AsyncStorage.getItem("xomo_extra_companies"),
+    ]).then(([q, j, r, ec]) => {
       if (q) setQuotes(JSON.parse(q));
       if (j) setJobs(JSON.parse(j));
       if (r) setUserReviews(JSON.parse(r));
+      if (ec) setExtraCompanies(JSON.parse(ec));
     }).catch(() => {});
   }, []);
 
@@ -269,11 +282,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem("xomo_user_reviews", JSON.stringify(updated)).catch(() => {});
   }, []);
 
-  const getCompany = useCallback((id: string) => COMPANIES.find((c) => c.id === id), []);
+  const allCompanies = [...COMPANIES, ...extraCompanies];
+
+  const addCompany = useCallback(
+    (data: {
+      name: string;
+      categoryIds: string[];
+      description: string;
+      location: string;
+      phone: string;
+      services: string[];
+      yearsActive: number;
+    }): Company => {
+      const newCompany: Company = {
+        ...data,
+        id: "p" + Date.now().toString() + Math.random().toString(36).substring(2, 6),
+        verified: false,
+        rating: 0,
+        reviewCount: 0,
+        completedJobs: 0,
+      };
+      const updated = [...extraCompanies, newCompany];
+      setExtraCompanies(updated);
+      AsyncStorage.setItem("xomo_extra_companies", JSON.stringify(updated)).catch(() => {});
+      return newCompany;
+    },
+    [extraCompanies]
+  );
+
+  const getCompany = useCallback((id: string) => allCompanies.find((c) => c.id === id), [allCompanies]);
 
   const getCompaniesByCategory = useCallback(
-    (categoryId: string) => COMPANIES.filter((c) => c.categoryIds.includes(categoryId)),
-    []
+    (categoryId: string) => allCompanies.filter((c) => c.categoryIds.includes(categoryId)),
+    [allCompanies]
   );
 
   const getReviews = useCallback(
@@ -352,10 +393,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider
       value={{
         categories: CATEGORIES,
-        companies: COMPANIES,
+        companies: allCompanies,
         getCompany,
         getCompaniesByCategory,
         getReviews,
+        addCompany,
         quotes,
         addQuote,
         updateQuoteStatus,

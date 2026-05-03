@@ -28,10 +28,10 @@ function useProtectedRoute() {
   useEffect(() => {
     if (loading) return;
     const onPublicScreen =
-      segments[0] === "onboarding" || segments[0] === "auth";
+      segments[0] === "onboarding" || segments[0] === "auth" || segments[0] === "provider";
     if (!user && !onPublicScreen) {
       router.replace("/onboarding");
-    } else if (user && onPublicScreen) {
+    } else if (user && (segments[0] === "onboarding" || segments[0] === "auth")) {
       router.replace("/(tabs)");
     }
   }, [user, loading, segments[0]]);
@@ -50,6 +50,7 @@ function RootLayoutNav() {
       <Stack.Screen name="quote/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="job/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="review/new" options={{ headerShown: false }} />
+      <Stack.Screen name="provider/register" options={{ headerShown: false }} />
     </Stack>
   );
 }
