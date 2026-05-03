@@ -177,37 +177,37 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Quick actions — Customer only */}
-        {!isProvider && (
-          <>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Quick Access</Text>
-            <View style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => router.push("/(tabs)/jobs")}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.menuIcon, { backgroundColor: "#EDF3EF" }]}>
-                  <Feather name="briefcase" size={18} color={colors.primary} />
-                </View>
-                <Text style={[styles.menuLabel, { color: colors.foreground }]}>My Jobs</Text>
-                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-              </TouchableOpacity>
-              <View style={[styles.menuSep, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => router.push("/(tabs)/quotes")}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.menuIcon, { backgroundColor: "#EDF3EF" }]}>
-                  <Feather name="file-text" size={18} color={colors.primary} />
-                </View>
-                <Text style={[styles.menuLabel, { color: colors.foreground }]}>My Quotes</Text>
-                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-              </TouchableOpacity>
+        {/* Quick actions */}
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Quick Access</Text>
+        <View style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push("/(tabs)/jobs")}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: "#EDF3EF" }]}>
+              <Feather name={isProvider ? "briefcase" : "list"} size={18} color={colors.primary} />
             </View>
-          </>
-        )}
+            <Text style={[styles.menuLabel, { color: colors.foreground }]}>
+              {isProvider ? "Assigned Jobs" : "My Jobs"}
+            </Text>
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+          </TouchableOpacity>
+          <View style={[styles.menuSep, { backgroundColor: colors.border }]} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push("/(tabs)/quotes")}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: "#EDF3EF" }]}>
+              <Feather name="file-text" size={18} color={colors.primary} />
+            </View>
+            <Text style={[styles.menuLabel, { color: colors.foreground }]}>
+              {isProvider ? "Job Requests" : "My Quotes"}
+            </Text>
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        </View>
 
         {/* Account Settings */}
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Account</Text>
