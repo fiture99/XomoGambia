@@ -215,13 +215,16 @@ interface AppContextType {
   getReviews: (companyId: string) => Review[];
   addCompany: (data: {
     name: string;
+    email?: string;
+    phone: string;
     categoryIds: string[];
     description: string;
     location: string;
-    phone: string;
     services: string[];
     yearsActive: number;
   }) => Company;
+  isCompanyEmailTaken: (email: string) => boolean;
+  isCompanyPhoneTaken: (phone: string) => boolean;
   quotes: QuoteRequest[];
   addQuote: (quote: Omit<QuoteRequest, "id" | "createdAt">) => void;
   updateQuoteStatus: (id: string, status: QuoteRequest["status"], amount?: number) => void;
@@ -241,6 +244,8 @@ const AppContext = createContext<AppContextType>({
   getCompaniesByCategory: () => [],
   getReviews: () => [],
   addCompany: () => { throw new Error("addCompany not initialized"); },
+  isCompanyEmailTaken: () => false,
+  isCompanyPhoneTaken: () => false,
   quotes: [],
   addQuote: () => {},
   updateQuoteStatus: () => {},
@@ -293,10 +298,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const addCompany = useCallback(
     (data: {
       name: string;
+      email?: string;
+      phone: string;
       categoryIds: string[];
       description: string;
       location: string;
-      phone: string;
       services: string[];
       yearsActive: number;
     }): Company => {
@@ -314,6 +320,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return newCompany;
     },
     [extraCompanies]
+  );
+
+  const isCompanyEmailTaken = useCallback(
+    (email: string) => {
+      const needle = email.trim().toLowerCase();
+      if (!needle) return false;
+      return allCompanies.some((company) => (company as any).email?.toLowerCase() === needle);
+    },
+    [allCompanies]
+  );
+
+  const isCompanyPhoneTaken = useCallback(
+    (phone: string) => {
+      const needle = phone.replace(/\D/g, "");
+      if (!needle) return false;
+      return allCompanies.some((company) => company.phone.replace(/\D/g, "") === needle);
+    },
+    [allCompanies]
   );
 
   const getCompany = useCallback((id: string) => allCompanies.find((c) => c.id === id), [allCompanies]);
@@ -417,6 +441,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         getCompaniesByCategory,
         getReviews,
         addCompany,
+        isCompanyEmailTaken,
+        isCompanyPhoneTaken,
         quotes,
         addQuote,
         updateQuoteStatus,

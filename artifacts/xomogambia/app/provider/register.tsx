@@ -22,7 +22,7 @@ export default function ProviderRegisterScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, updateUser } = useAuth();
-  const { addCompany } = useApp();
+  const { addCompany, isCompanyPhoneTaken, isCompanyEmailTaken } = useApp();
 
   const [companyName, setCompanyName] = useState("");
   const [phone, setPhone] = useState("+220 ");
@@ -47,7 +47,9 @@ export default function ProviderRegisterScreen() {
     if (!companyName.trim()) { setError("Company name is required."); return; }
     if (selectedCategories.length === 0) { setError("Please select at least one service category."); return; }
     if (!location.trim()) { setError("Please enter your operating location."); return; }
+    if (user?.email && isCompanyEmailTaken(user.email)) { setError("This email is already registered."); return; }
     if (!phone.trim() || phone.trim().length < 8) { setError("Please enter a valid phone number."); return; }
+    if (isCompanyPhoneTaken(phone.trim())) { setError("This phone number is already registered."); return; }
     if (!description.trim() || description.trim().length < 30) { setError("Please write a description of at least 30 characters."); return; }
 
     const services = servicesText

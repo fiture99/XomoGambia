@@ -91,5 +91,27 @@
     "reviewCount": 0,
     "completedJobs": 0,
     "submittedAt": "2026-05-03T08:14:27.352Z"
+  },
+  {
+    "id": "api-17777964160491dmm",
+    "name": "fas",
+    "categoryIds": [
+      "ac"
+    ],
+    "description": "dfdafsdfssdf sdvfsdf sdfsdfsdf",
+    "location": "fd",
+    "phone": "+220 12132",
+    "services": [
+      "sdfsf"
+    ],
+    "yearsActive": 3,
+    "submitterName": "lam",
+    "submitterEmail": "laminjawnehlj55@gmail.com",
+    "approvalStatus": "approved",
+    "verified": true,
+    "rating": 0,
+    "reviewCount": 0,
+    "completedJobs": 0,
+    "submittedAt": "2026-05-03T08:20:16.049Z"
   }
 ]

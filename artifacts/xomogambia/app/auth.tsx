@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useApp } from "@/context/AppContext";
 import { type UserRole, useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -29,6 +30,7 @@ export default function AuthScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { login, loginWithCredentials } = useAuth();
+  const { isCompanyEmailTaken } = useApp();
 
   const [step, setStep] = useState<Step>(isRegister ? "role" : "details");
   const [role, setRole] = useState<UserRole>("customer");
@@ -68,6 +70,7 @@ export default function AuthScreen() {
     if (isRegister) {
       if (!name.trim()) { setError("Please enter your full name."); return; }
       if (!email.trim() || !email.includes("@")) { setError("Please enter a valid email address."); return; }
+      if (isCompanyEmailTaken(email.trim())) { setError("This email is already registered."); return; }
       if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
       if (password !== confirmPassword) { setError("Passwords do not match."); return; }
       setLoading(true);
