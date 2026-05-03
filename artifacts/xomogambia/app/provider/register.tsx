@@ -119,10 +119,10 @@ export default function ProviderRegisterScreen() {
 
           <TouchableOpacity
             style={[styles.doneBtn, { backgroundColor: colors.primary }]}
-            onPress={() => router.replace("/(tabs)")}
+            onPress={() => router.replace("../pending")}
             activeOpacity={0.85}
           >
-            <Text style={styles.doneBtnText}>Go to Home</Text>
+            <Text style={styles.doneBtnText}>View Approval Status</Text>
             <Feather name="arrow-right" size={18} color="#fff" />
           </TouchableOpacity>
         </View>
