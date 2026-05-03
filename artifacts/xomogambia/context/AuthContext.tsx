@@ -8,13 +8,15 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  password?: string;
   companyId?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (name: string, email: string, role: UserRole, companyId?: string) => Promise<void>;
+  login: (name: string, email: string, role: UserRole, password?: string, companyId?: string) => Promise<void>;
+  loginWithCredentials: (email: string, password: string) => Promise<boolean>;
   updateUser: (updates: Partial<User>) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -23,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   login: async () => {},
+  loginWithCredentials: async () => false,
   updateUser: async () => {},
   logout: async () => {},
 });
@@ -40,16 +43,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function login(name: string, email: string, role: UserRole, companyId?: string) {
+  async function login(name: string, email: string, role: UserRole, password?: string, companyId?: string) {
     const newUser: User = {
       id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
       name,
       email,
       role,
+      password,
       companyId,
     };
     await AsyncStorage.setItem("xomo_user", JSON.stringify(newUser));
     setUser(newUser);
+  }
+
+  async function loginWithCredentials(email: string, password: string): Promise<boolean> {
+    const data = await AsyncStorage.getItem("xomo_user");
+    if (!data) return false;
+    const stored: User = JSON.parse(data);
+    if (stored.email.toLowerCase() === email.toLowerCase() && stored.password === password) {
+      setUser(stored);
+      return true;
+    }
+    return false;
   }
 
   async function updateUser(updates: Partial<User>) {
@@ -65,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, updateUser, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithCredentials, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -22,6 +22,7 @@ const MENU_ITEMS = [
   { icon: "file-text", label: "Terms & Privacy", onPress: () => {} },
 ];
 
+
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -208,7 +209,26 @@ export default function ProfileScreen() {
           </>
         )}
 
-        {/* Settings */}
+        {/* Account Settings */}
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Account</Text>
+        <View style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push("/settings")}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: "#EDF3EF" }]}>
+              <Feather name="settings" size={18} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.menuLabel, { color: colors.foreground }]}>Account Settings</Text>
+              <Text style={[styles.menuSub, { color: colors.mutedForeground }]}>Name, password, biometrics</Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        </View>
+
+        {/* General */}
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>General</Text>
         <View style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {MENU_ITEMS.map((item, i) => (
@@ -267,7 +287,8 @@ const styles = StyleSheet.create({
   menuCard: { borderRadius: 16, borderWidth: 1, marginBottom: 20, overflow: "hidden" },
   menuItem: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
   menuIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  menuLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium" },
+  menuLabel: { fontSize: 15, fontFamily: "Inter_500Medium" },
+  menuSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
   menuSep: { height: 1, marginLeft: 62 },
   logoutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", borderRadius: 14, borderWidth: 1.5, paddingVertical: 14, gap: 8 },
   logoutText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
