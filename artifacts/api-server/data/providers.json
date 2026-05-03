@@ -1,0 +1,29 @@
+[
+  {
+    "id": "api-1777768235874h00h",
+    "name": "Sunshine Solar Gambia",
+    "categoryIds": [
+      "electrical",
+      "generators"
+    ],
+    "description": "Premier solar energy and generator installation company serving hotels and businesses across Greater Banjul. Over 5 years of proven experience.",
+    "location": "Banjul",
+    "phone": "+220 7991234",
+    "services": [
+      "Solar Panel Installation",
+      "Battery Storage",
+      "Generator Supply",
+      "Inverter Setup",
+      "System Maintenance"
+    ],
+    "yearsActive": 5,
+    "submitterName": "Ousman Bojang",
+    "submitterEmail": "ousman@sunshine-solar.gm",
+    "approvalStatus": "pending",
+    "verified": false,
+    "rating": 0,
+    "reviewCount": 0,
+    "completedJobs": 0,
+    "submittedAt": "2026-05-03T00:30:35.874Z"
+  }
+]

@@ -16,26 +16,72 @@ const ProvidersContext = createContext<ProvidersContextType | undefined>(undefin
 const PROVIDERS_KEY = "xomo_admin_providers";
 const CATEGORIES_KEY = "xomo_admin_categories";
 
+async function fetchApiProviders(): Promise<Provider[]> {
+  try {
+    const res = await fetch("/api/providers", { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) return [];
+    const data = await res.json() as Provider[];
+    return data;
+  } catch {
+    return [];
+  }
+}
+
+async function patchApiProvider(id: string, action: "approve" | "reject", reason?: string): Promise<void> {
+  try {
+    const url = `/api/providers/${id}/${action}`;
+    await fetch(url, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: action === "reject" ? JSON.stringify({ reason }) : undefined,
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch {
+  }
+}
+
 export function ProvidersProvider({ children }: { children: React.ReactNode }) {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    const storedProviders = localStorage.getItem(PROVIDERS_KEY);
     const storedCategories = localStorage.getItem(CATEGORIES_KEY);
-
-    if (storedProviders && storedCategories) {
-      setProviders(JSON.parse(storedProviders));
+    if (storedCategories) {
       setCategories(JSON.parse(storedCategories));
     } else {
-      localStorage.setItem(PROVIDERS_KEY, JSON.stringify(MOCK_PROVIDERS));
       localStorage.setItem(CATEGORIES_KEY, JSON.stringify(MOCK_CATEGORIES));
-      setProviders(MOCK_PROVIDERS);
       setCategories(MOCK_CATEGORIES);
     }
-    setInitialized(true);
+
+    const storedProviders = localStorage.getItem(PROVIDERS_KEY);
+    const localProviders: Provider[] = storedProviders ? JSON.parse(storedProviders) : MOCK_PROVIDERS;
+    if (!storedProviders) {
+      localStorage.setItem(PROVIDERS_KEY, JSON.stringify(MOCK_PROVIDERS));
+    }
+
+    fetchApiProviders().then((apiProviders) => {
+      const localIds = new Set(localProviders.map((p) => p.id));
+      const newFromApi = apiProviders.filter((p) => !localIds.has(p.id));
+      const merged = [...localProviders, ...newFromApi];
+      setProviders(merged);
+      setInitialized(true);
+    });
   }, []);
+
+  useEffect(() => {
+    if (!initialized) return;
+    const interval = setInterval(async () => {
+      const apiProviders = await fetchApiProviders();
+      setProviders((current) => {
+        const localIds = new Set(current.filter((p) => !p.id.startsWith("api-")).map((p) => p.id));
+        const newFromApi = apiProviders.filter((p) => !localIds.has(p.id) && p.id.startsWith("api-"));
+        if (newFromApi.length === 0) return current;
+        return [...current, ...newFromApi];
+      });
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [initialized]);
 
   const saveProviders = (newProviders: Provider[]) => {
     setProviders(newProviders);
@@ -47,6 +93,7 @@ export function ProvidersProvider({ children }: { children: React.ReactNode }) {
       p.id === id ? { ...p, approvalStatus: "approved" as const, verified: true, rejectionReason: undefined } : p
     );
     saveProviders(updated);
+    if (id.startsWith("api-")) patchApiProvider(id, "approve");
   };
 
   const rejectProvider = (id: string, reason: string) => {
@@ -54,6 +101,7 @@ export function ProvidersProvider({ children }: { children: React.ReactNode }) {
       p.id === id ? { ...p, approvalStatus: "rejected" as const, verified: false, rejectionReason: reason } : p
     );
     saveProviders(updated);
+    if (id.startsWith("api-")) patchApiProvider(id, "reject", reason);
   };
 
   const revokeProvider = (id: string) => {

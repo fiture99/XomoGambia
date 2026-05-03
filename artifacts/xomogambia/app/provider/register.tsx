@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CATEGORIES, useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { submitProviderRegistration } from "@/lib/api";
 
 export default function ProviderRegisterScreen() {
   const colors = useColors();
@@ -30,6 +31,7 @@ export default function ProviderRegisterScreen() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [servicesText, setServicesText] = useState("");
   const [yearsActive, setYearsActive] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
@@ -55,9 +57,10 @@ export default function ProviderRegisterScreen() {
 
     if (services.length === 0) { setError("Please list at least one service (comma-separated)."); return; }
 
+    setSubmitting(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    const newCompany = addCompany({
+    const payload = {
       name: companyName.trim(),
       categoryIds: selectedCategories,
       description: description.trim(),
@@ -65,9 +68,22 @@ export default function ProviderRegisterScreen() {
       phone: phone.trim(),
       services,
       yearsActive: parseInt(yearsActive) || 1,
-    });
+      submitterName: user?.name ?? "",
+      submitterEmail: user?.email ?? "",
+    };
 
-    await updateUser({ companyId: newCompany.id });
+    let companyId: string | undefined;
+
+    try {
+      const result = await submitProviderRegistration(payload);
+      companyId = result.id;
+    } catch {
+      const localCompany = addCompany(payload);
+      companyId = localCompany.id;
+    }
+
+    await updateUser({ companyId });
+    setSubmitting(false);
     setSubmitted(true);
   }
 
@@ -89,13 +105,13 @@ export default function ProviderRegisterScreen() {
           </View>
           <Text style={[styles.successTitle, { color: colors.foreground }]}>Application Submitted!</Text>
           <Text style={[styles.successSub, { color: colors.mutedForeground }]}>
-            Your company <Text style={{ fontFamily: "Inter_600SemiBold", color: colors.foreground }}>{companyName}</Text> has been submitted for review. Our admin team will verify your details within 1–3 business days.
+            Your company <Text style={{ fontFamily: "Inter_600SemiBold", color: colors.foreground }}>{companyName}</Text> has been submitted to the admin team for review.
           </Text>
 
           <View style={[styles.infoBox, { backgroundColor: "#FEF9C3", borderColor: "#FDE68A" }]}>
             <Feather name="clock" size={16} color="#92400E" />
             <Text style={[styles.infoText, { color: "#92400E" }]}>
-              You'll receive confirmation once your company is approved. You can track your status in the Profile tab.
+              Our team will verify your details within 1–3 business days. You can track your approval status in the Profile tab.
             </Text>
           </View>
 
@@ -144,7 +160,7 @@ export default function ProviderRegisterScreen() {
         <View style={[styles.stepBadge, { backgroundColor: "#FEF3C7", borderColor: "#FDE68A" }]}>
           <Feather name="info" size={13} color="#92400E" />
           <Text style={[styles.stepBadgeText, { color: "#92400E" }]}>
-            Your listing will be reviewed by our team before going live on the marketplace.
+            Your listing will be reviewed by our admin team before going live on the marketplace.
           </Text>
         </View>
 
@@ -235,13 +251,10 @@ export default function ProviderRegisterScreen() {
         <View style={styles.field}>
           <Text style={[styles.label, { color: colors.foreground }]}>Company Description *</Text>
           <Text style={[styles.hint, { color: colors.mutedForeground }]}>
-            Describe your expertise, experience, and what makes your company stand out. Minimum 30 characters.
+            Describe your expertise, experience, and what makes your company stand out (min. 30 characters).
           </Text>
           <TextInput
-            style={[
-              styles.textarea,
-              { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground },
-            ]}
+            style={[styles.textarea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
             value={description}
             onChangeText={setDescription}
             placeholder="e.g. Leading electrical contractors in Greater Banjul with over 10 years of experience..."
@@ -259,13 +272,10 @@ export default function ProviderRegisterScreen() {
             List your specific services, separated by commas.
           </Text>
           <TextInput
-            style={[
-              styles.textarea,
-              { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground },
-            ]}
+            style={[styles.textarea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
             value={servicesText}
             onChangeText={setServicesText}
-            placeholder="e.g. Wiring & Rewiring, Solar Installations, Emergency Repairs, Generator Connections"
+            placeholder="e.g. Wiring & Rewiring, Solar Installations, Emergency Repairs"
             placeholderTextColor={colors.mutedForeground}
             multiline
             numberOfLines={3}
@@ -281,12 +291,15 @@ export default function ProviderRegisterScreen() {
         )}
 
         <TouchableOpacity
-          style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: 1 }]}
+          style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: submitting ? 0.7 : 1 }]}
           onPress={handleSubmit}
           activeOpacity={0.85}
+          disabled={submitting}
         >
           <Feather name="send" size={18} color="#fff" />
-          <Text style={styles.submitBtnText}>Submit for Review</Text>
+          <Text style={styles.submitBtnText}>
+            {submitting ? "Submitting..." : "Submit for Review"}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
