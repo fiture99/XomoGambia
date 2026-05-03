@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Badge } from "@/components/Badge";
 import { CATEGORIES, useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
 const STATUS_VARIANT = {
@@ -34,9 +35,11 @@ export default function QuoteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { quotes, updateQuoteStatus, addJob, getCompany } = useApp();
+  const { user } = useAuth();
+  const { quotes, updateQuoteStatus, addJob, getCompany, getQuotesForProvider } = useApp();
+  const visibleQuotes = user?.role === "provider" ? getQuotesForProvider(user.companyId) : quotes;
 
-  const quote = useMemo(() => quotes.find((q) => q.id === id), [quotes, id]);
+  const quote = useMemo(() => visibleQuotes.find((q) => q.id === id), [visibleQuotes, id]);
   const company = useMemo(() => getCompany(quote?.companyId ?? ""), [quote, getCompany]);
   const primaryCategory = CATEGORIES.find((c) => c.id === quote?.categoryId);
 

@@ -213,6 +213,9 @@ interface AppContextType {
   getCompany: (id: string) => Company | undefined;
   getCompaniesByCategory: (categoryId: string) => Company[];
   getReviews: (companyId: string) => Review[];
+  getCompaniesForProvider: (companyId?: string) => Company[];
+  getQuotesForProvider: (companyId?: string) => QuoteRequest[];
+  getJobsForProvider: (companyId?: string) => Job[];
   addCompany: (data: {
     name: string;
     email?: string;
@@ -243,6 +246,9 @@ const AppContext = createContext<AppContextType>({
   getCompany: () => undefined,
   getCompaniesByCategory: () => [],
   getReviews: () => [],
+  getCompaniesForProvider: () => [],
+  getQuotesForProvider: () => [],
+  getJobsForProvider: () => [],
   addCompany: () => { throw new Error("addCompany not initialized"); },
   isCompanyEmailTaken: () => false,
   isCompanyPhoneTaken: () => false,
@@ -341,6 +347,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const getCompany = useCallback((id: string) => allCompanies.find((c) => c.id === id), [allCompanies]);
+  const getCompaniesForProvider = useCallback(
+    (companyId?: string) => (companyId ? allCompanies.filter((c) => c.id === companyId) : []),
+    [allCompanies]
+  );
+  const getQuotesForProvider = useCallback(
+    (companyId?: string) => (companyId ? quotes.filter((q) => q.companyId === companyId) : []),
+    [quotes]
+  );
+  const getJobsForProvider = useCallback(
+    (companyId?: string) => (companyId ? jobs.filter((j) => j.companyId === companyId) : []),
+    [jobs]
+  );
 
   const getCompaniesByCategory = useCallback(
     (categoryId: string) => allCompanies.filter((c) => c.categoryIds.includes(categoryId)),
@@ -439,7 +457,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         companies: allCompanies,
         getCompany,
         getCompaniesByCategory,
-        getReviews,
+      getReviews,
+      getCompaniesForProvider,
+      getQuotesForProvider,
+      getJobsForProvider,
         addCompany,
         isCompanyEmailTaken,
         isCompanyPhoneTaken,

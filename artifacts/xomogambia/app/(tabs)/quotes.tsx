@@ -5,20 +5,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EmptyState } from "@/components/EmptyState";
 import { QuoteCard } from "@/components/QuoteCard";
 import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
 export default function QuotesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { quotes } = useApp();
+  const { user } = useAuth();
+  const { quotes, getQuotesForProvider } = useApp();
+  const visibleQuotes = user?.role === "provider" ? getQuotesForProvider(user.companyId) : quotes;
 
   const active = useMemo(
-    () => quotes.filter((q) => q.status === "pending" || q.status === "received"),
-    [quotes]
+    () => visibleQuotes.filter((q) => q.status === "pending" || q.status === "received"),
+    [visibleQuotes]
   );
   const archived = useMemo(
-    () => quotes.filter((q) => q.status === "accepted" || q.status === "declined"),
-    [quotes]
+    () => visibleQuotes.filter((q) => q.status === "accepted" || q.status === "declined"),
+    [visibleQuotes]
   );
 
   return (
@@ -34,11 +37,11 @@ export default function QuotesScreen() {
       >
         <Text style={[styles.title, { color: colors.foreground }]}>My Quotes</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          {quotes.length} quote request{quotes.length !== 1 ? "s" : ""}
+          {visibleQuotes.length} quote request{visibleQuotes.length !== 1 ? "s" : ""}
         </Text>
       </View>
 
-      {quotes.length === 0 ? (
+      {visibleQuotes.length === 0 ? (
         <EmptyState
           icon="file-text"
           title="No quote requests yet"

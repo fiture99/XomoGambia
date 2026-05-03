@@ -23,24 +23,26 @@ export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { categories, companies } = useApp();
+  const { categories, companies, getCompaniesForProvider } = useApp();
   const [query, setQuery] = useState("");
+  const providerCompanies = useMemo(() => getCompaniesForProvider(user?.companyId), [getCompaniesForProvider, user?.companyId]);
+  const visibleCompanies = user?.role === "provider" ? providerCompanies : companies;
 
   const topRated = useMemo(
-    () => [...companies].sort((a, b) => b.rating - a.rating).slice(0, 6),
-    [companies]
+    () => [...visibleCompanies].sort((a, b) => b.rating - a.rating).slice(0, 6),
+    [visibleCompanies]
   );
 
   const filtered = useMemo(() => {
     if (!query.trim()) return [];
     const q = query.toLowerCase();
-    return companies.filter(
+    return visibleCompanies.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
         c.location.toLowerCase().includes(q) ||
         c.services.some((s) => s.toLowerCase().includes(q))
     );
-  }, [query, companies]);
+  }, [query, visibleCompanies]);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();

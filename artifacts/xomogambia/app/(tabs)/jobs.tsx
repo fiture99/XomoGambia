@@ -5,20 +5,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EmptyState } from "@/components/EmptyState";
 import { JobCard } from "@/components/JobCard";
 import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
 export default function JobsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { jobs } = useApp();
+  const { user } = useAuth();
+  const { jobs, getJobsForProvider } = useApp();
+  const visibleJobs = user?.role === "provider" ? getJobsForProvider(user.companyId) : jobs;
 
   const active = useMemo(
-    () => jobs.filter((j) => j.status === "upcoming" || j.status === "in_progress"),
-    [jobs]
+    () => visibleJobs.filter((j) => j.status === "upcoming" || j.status === "in_progress"),
+    [visibleJobs]
   );
   const done = useMemo(
-    () => jobs.filter((j) => j.status === "completed" || j.status === "cancelled"),
-    [jobs]
+    () => visibleJobs.filter((j) => j.status === "completed" || j.status === "cancelled"),
+    [visibleJobs]
   );
 
   return (
@@ -34,11 +37,11 @@ export default function JobsScreen() {
       >
         <Text style={[styles.title, { color: colors.foreground }]}>My Jobs</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          {jobs.length} job{jobs.length !== 1 ? "s" : ""} total
+          {visibleJobs.length} job{visibleJobs.length !== 1 ? "s" : ""} total
         </Text>
       </View>
 
-      {jobs.length === 0 ? (
+      {visibleJobs.length === 0 ? (
         <EmptyState
           icon="briefcase"
           title="No jobs yet"

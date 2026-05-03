@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Badge } from "@/components/Badge";
 import { CATEGORIES, useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
 const STEPS = [
@@ -39,10 +40,12 @@ export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { jobs, updateJobStatus, getCompany } = useApp();
+  const { user } = useAuth();
+  const { jobs, updateJobStatus, getCompany, getJobsForProvider } = useApp();
+  const visibleJobs = user?.role === "provider" ? getJobsForProvider(user.companyId) : jobs;
 
 
-  const job = useMemo(() => jobs.find((j) => j.id === id), [jobs, id]);
+  const job = useMemo(() => visibleJobs.find((j) => j.id === id), [visibleJobs, id]);
   const company = useMemo(() => getCompany(job?.companyId ?? ""), [job, getCompany]);
   const primaryCategory = CATEGORIES.find((c) => c.id === job?.categoryId);
 
