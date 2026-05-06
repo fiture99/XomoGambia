@@ -18,10 +18,29 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, "node_modules"),
 ];
 
-config.resolver.extraNodeModules = {
-  "react": path.resolve(projectRoot, "node_modules/react"),
-  "react-native": path.resolve(projectRoot, "node_modules/react-native"),
-};
+// Packages that must resolve to a single copy to avoid "Invalid hook call" errors.
+// In a pnpm monorepo different packages can reach the same npm package through
+// different symlink chains; Metro sees them as separate module instances.
+// We pin them all to the project-local resolution so there is exactly one copy.
+const SINGLETON_PACKAGES = [
+  "react",
+  "react-dom",
+  "react-native",
+  "react-native-web",
+  "react/jsx-runtime",
+  "react/jsx-dev-runtime",
+];
+
+const singletonMap = {};
+for (const pkg of SINGLETON_PACKAGES) {
+  try {
+    singletonMap[pkg] = require.resolve(
+      path.join(projectRoot, "node_modules", pkg)
+    );
+  } catch (_) {
+    // package not installed locally — leave Metro to resolve normally
+  }
+}
 
 // Intercept "expo-router/_ctx" imports and redirect to our custom _ctx.web.js
 // that uses a local relative path ("./app") instead of process.env.EXPO_ROUTER_APP_ROOT.
@@ -30,12 +49,19 @@ config.resolver.extraNodeModules = {
 // producing a bogus path that has no files (empty context, no routes discovered).
 const originalResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // Fix expo-router route discovery on web
   if (moduleName === "expo-router/_ctx" && platform === "web") {
     return {
       type: "sourceFile",
       filePath: path.join(projectRoot, "_expo_router_ctx_web.js"),
     };
   }
+
+  // Pin singleton packages to a single copy
+  if (singletonMap[moduleName]) {
+    return { type: "sourceFile", filePath: singletonMap[moduleName] };
+  }
+
   if (originalResolveRequest) {
     return originalResolveRequest(context, moduleName, platform);
   }
