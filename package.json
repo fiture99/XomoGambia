@@ -14,10 +14,15 @@
     "typescript": "~5.9.2"
   },
   "dependencies": {
-    "lightningcss": "1.31.1"
+    "lightningcss": "1.31.1",
+    "lightningcss-win32-x64-msvc": "^1.32.0"
   },
   "pnpm": {
-  "dedupe": ["react", "react-dom", "react-native"],
-  "shamefullyHoist": true
-}
+    "dedupe": [
+      "react",
+      "react-dom",
+      "react-native"
+    ],
+    "shamefullyHoist": true
+  }
 }

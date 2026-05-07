@@ -3,13 +3,14 @@ const path = require("path");
 
 process.env.EXPO_ROUTER_APP_ROOT = "app";
 
-const config = getDefaultConfig(__dirname);
-
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, "../..");
+const projectRelativePath = path.relative(workspaceRoot, projectRoot).replace(/\\/g, '/');
 
-// Path of this project relative to the workspace root (e.g. "artifacts/xomogambia")
-const projectRelativePath = path.relative(workspaceRoot, projectRoot);
+const config = getDefaultConfig(projectRoot);
+
+// Tell Metro the project root is here, not the workspace root
+config.projectRoot = projectRoot;
 
 config.watchFolders = [workspaceRoot];
 
@@ -18,10 +19,6 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, "node_modules"),
 ];
 
-// Packages that must resolve to a single copy to avoid "Invalid hook call" errors.
-// In a pnpm monorepo different packages can reach the same npm package through
-// different symlink chains; Metro sees them as separate module instances.
-// We pin them all to the project-local resolution so there is exactly one copy.
 const SINGLETON_PACKAGES = [
   "react",
   "react-dom",
@@ -37,24 +34,25 @@ for (const pkg of SINGLETON_PACKAGES) {
     singletonMap[pkg] = require.resolve(
       path.join(projectRoot, "node_modules", pkg)
     );
-  } catch (_) {
-    // package not installed locally — leave Metro to resolve normally
-  }
+  } catch (_) {}
 }
 
-// Intercept "expo-router/_ctx" imports and redirect to our custom _ctx.web.js
-// that uses a local relative path ("./app") instead of process.env.EXPO_ROUTER_APP_ROOT.
-// The env var gets inlined as an absolute path by babel-plugin-transform-inline-environment-variables,
-// and Metro's require.context treats it as relative to _ctx.web.js inside node_modules,
-// producing a bogus path that has no files (empty context, no routes discovered).
 const originalResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  // Fix expo-router route discovery on web
-  if (moduleName === "expo-router/_ctx" && platform === "web") {
+  // Fix expo-router route discovery for all platforms
+  if (moduleName === "expo-router/_ctx") {
     return {
       type: "sourceFile",
       filePath: path.join(projectRoot, "_expo_router_ctx_web.js"),
     };
+  }
+
+  // Fix doubled path for native lazy route bundles
+  // Metro resolves ./artifacts/xomogambia/app/X but context gives artifacts\xomogambia\app\X
+  const doubled = `./artifacts/xomogambia/artifacts`;
+  if (moduleName.startsWith(doubled)) {
+    const fixed = moduleName.replace(doubled, `./artifacts`);
+    return context.resolveRequest(context, fixed, platform);
   }
 
   // Pin singleton packages to a single copy
@@ -68,15 +66,12 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   return context.resolveRequest(context, moduleName, platform);
 };
 
-// Metro resolves lazy bundle URL paths relative to the workspace root, but
-// the browser requests them relative to the artifact root (e.g. /app/_layout.bundle).
-// This middleware rewrites those requests to the full workspace-relative path
-// (e.g. /artifacts/xomogambia/app/_layout.bundle) so Metro can find them.
 config.server = {
   ...config.server,
   enhanceMiddleware: (metroMiddleware) => {
     return (req, res, next) => {
-      const url = req.url || "";
+      const url = (req.url || "").replace(/\\/g, '/');
+      req.url = url;
       const isBundleRequest = url.includes(".bundle");
       const isAlreadyRooted =
         url.startsWith("/node_modules/") ||
