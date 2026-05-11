@@ -1,0 +1,27 @@
+First-time setup
+
+# 1. Install dependencies
+pnpm install
+# 2. Set your environment variables
+cp .env.example .env
+# Open .env and set DATABASE_URL to your Postgres connection string
+# 3. Create the tables
+pnpm --filter @workspace/db run push
+# 4. Seed the marketplace data (15 companies, 16 reviews)
+pnpm --filter @workspace/db run seed
+
+Run the three servers (each in its own terminal tab):
+
+# Terminal 1 — API
+pnpm --filter @workspace/api-server run dev
+# Terminal 2 — Admin panel
+pnpm --filter @workspace/admin run dev
+$env:PORT=3000; $env:BASE_PATH="/"; pnpm --filter @workspace/admin run dev
+# Terminal 3 — Mobile app (web preview at http://localhost:24933)
+pnpm --filter @workspace/xomogambia run dev
+
+On a physical phone — install Expo Go, then set your laptop's local IP in artifacts/xomogambia/.env:
+
+EXPO_PUBLIC_API_URL=http://192.168.x.x:8080
+
+Then scan the QR code that appears in Terminal 3. Your phone
