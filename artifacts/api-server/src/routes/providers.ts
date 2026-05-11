@@ -75,4 +75,15 @@ router.patch("/providers/:id/reject", async (req, res) => {
   res.json(updated);
 });
 
+router.patch("/providers/:id/revoke", async (req, res) => {
+  const [updated] = await db
+    .update(providersTable)
+    .set({ approvalStatus: "pending", verified: false, rejectionReason: null })
+    .where(eq(providersTable.id, req.params.id))
+    .returning();
+
+  if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(updated);
+});
+
 export default router;

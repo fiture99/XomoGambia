@@ -319,10 +319,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         description: job.description, location: job.location,
         status: job.status, amount: job.amount,
         scheduledDate: job.scheduledDate ?? null,
-        paymentStatus: job.paymentStatus ?? "unpaid",
-        paymentMethod: job.paymentMethod ?? null,
-        transactionRef: job.transactionRef ?? null,
-        paidAt: job.paidAt ?? null,
       });
       setJobs((prev) => [apiJobToJob(created), ...prev]);
     } catch {
