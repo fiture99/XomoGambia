@@ -61,7 +61,7 @@ export default function QuoteDetailScreen() {
     if (!quote) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     updateQuoteStatus(quote.id, "accepted");
-    addJob({
+    addJob(user?.id ?? "guest", {
       companyId: quote.companyId,
       companyName: quote.companyName,
       categoryId: quote.categoryId,

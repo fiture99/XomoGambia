@@ -45,7 +45,7 @@ export default function NewQuoteScreen() {
     if (!company) return;
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    addQuote({
+    addQuote(user?.id ?? "guest", {
       companyId: company.id,
       companyName: company.name,
       categoryId: company.categoryIds[0],

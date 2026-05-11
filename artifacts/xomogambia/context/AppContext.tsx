@@ -1,5 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+  fetchCompanies, fetchReviews, postReview,
+  fetchQuotes, createQuote, updateQuote,
+  fetchJobs, createJob, updateJobStatus,
+  markJobReviewedApi, markJobPaidApi,
+  type ApiCompany, type ApiReview, type ApiQuote, type ApiJob,
+} from "../lib/api";
 
 export interface ServiceCategory {
   id: string;
@@ -80,400 +87,326 @@ export const CATEGORIES: ServiceCategory[] = [
   { id: "landscaping", name: "Landscaping", slug: "landscaping", icon: "feather", color: "#10B981", description: "Garden design & maintenance" },
 ];
 
-export const COMPANIES: Company[] = [
-  {
-    id: "c1", name: "Gamtel Power Solutions", categoryIds: ["electrical"],
-    description: "Leading electrical contractors in Greater Banjul with over 12 years of experience. We handle industrial, commercial and residential projects with full compliance to national electrical standards.",
-    location: "Banjul", verified: true, rating: 4.8, reviewCount: 47, completedJobs: 89, yearsActive: 12,
-    phone: "+220 7001234",
-    services: ["Wiring & Rewiring", "Distribution Boards", "Solar Installations", "Emergency Repairs", "Generator Connections"],
-  },
-  {
-    id: "c2", name: "Banjul Electrical Contractors", categoryIds: ["electrical"],
-    description: "Certified electrical engineers serving hotels, offices, and homes in Serekunda. Known for clean, reliable workmanship and transparent pricing.",
-    location: "Serekunda", verified: true, rating: 4.6, reviewCount: 32, completedJobs: 61, yearsActive: 8,
-    phone: "+220 7012345",
-    services: ["New Installations", "Fault Finding", "LED Lighting", "Cable Management", "Safety Inspections"],
-  },
-  {
-    id: "c3", name: "Westside Plumbing Co", categoryIds: ["plumbing"],
-    description: "Expert plumbing contractors operating across Kololi, Kotu, and the Atlantic coast. Specialists in hotel and resort plumbing systems with 24/7 emergency availability.",
-    location: "Kololi", verified: true, rating: 4.7, reviewCount: 28, completedJobs: 54, yearsActive: 9,
-    phone: "+220 7023456",
-    services: ["Pipe Installation", "Leak Detection", "Bathroom Fitting", "Water Pumps", "Drainage Systems"],
-  },
-  {
-    id: "c4", name: "Atlantic Water Works", categoryIds: ["plumbing"],
-    description: "Reliable plumbing services for commercial properties and residences in Banjul. Fully registered with the Gambia Plumbers Association.",
-    location: "Banjul", verified: true, rating: 4.5, reviewCount: 19, completedJobs: 38, yearsActive: 6,
-    phone: "+220 7034567",
-    services: ["Plumbing Repairs", "Water Tank Installation", "Toilet Fitting", "Waterproofing", "Borehole Connections"],
-  },
-  {
-    id: "c5", name: "SecureVision Systems", categoryIds: ["cctv"],
-    description: "The Gambia's most trusted CCTV and security company. We have installed over 120 systems across hotels, banks, schools, and government buildings.",
-    location: "Kanifing", verified: true, rating: 4.9, reviewCount: 56, completedJobs: 120, yearsActive: 14,
-    phone: "+220 7045678",
-    services: ["CCTV Installation", "IP Camera Systems", "Access Control", "Alarm Systems", "Remote Monitoring"],
-  },
-  {
-    id: "c6", name: "Gambia Security Solutions", categoryIds: ["cctv"],
-    description: "Professional security system installers with expertise in Hikvision and Dahua camera systems. Servicing corporate and residential clients.",
-    location: "Banjul", verified: true, rating: 4.4, reviewCount: 23, completedJobs: 41, yearsActive: 5,
-    phone: "+220 7056789",
-    services: ["Camera Installation", "DVR/NVR Setup", "System Maintenance", "Security Audits", "Cabling"],
-  },
-  {
-    id: "c7", name: "ProClean Gambia", categoryIds: ["cleaning"],
-    description: "Premium commercial cleaning company trusted by hotels, offices, and NGOs. Our trained teams use eco-friendly products and industrial equipment for spotless results.",
-    location: "Serekunda", verified: true, rating: 4.8, reviewCount: 41, completedJobs: 95, yearsActive: 7,
-    phone: "+220 7067890",
-    services: ["Office Cleaning", "Deep Cleaning", "Post-Construction", "Carpet Cleaning", "Window Cleaning"],
-  },
-  {
-    id: "c8", name: "Shine Cleaning Services", categoryIds: ["cleaning"],
-    description: "Affordable and professional cleaning services for homes and small businesses in Kololi and surrounding areas.",
-    location: "Kololi", verified: true, rating: 4.5, reviewCount: 17, completedJobs: 33, yearsActive: 4,
-    phone: "+220 7078901",
-    services: ["House Cleaning", "Move-in/Move-out", "Kitchen Deep Clean", "Bathroom Sanitization"],
-  },
-  {
-    id: "c9", name: "CoolAir Gambia", categoryIds: ["ac"],
-    description: "Authorized installers for Midea, Samsung, and LG air conditioning systems. Serving hotels, offices, and residences across The Gambia for 10 years.",
-    location: "Banjul", verified: true, rating: 4.7, reviewCount: 35, completedJobs: 78, yearsActive: 10,
-    phone: "+220 7089012",
-    services: ["AC Installation", "Servicing & Maintenance", "Gas Refilling", "Repairs", "Multi-Split Systems"],
-  },
-  {
-    id: "c10", name: "ArcticBreeze Services", categoryIds: ["ac"],
-    description: "Fast, affordable air conditioning installation and repair. Same-day service available for urgent breakdowns across Serekunda, Kotu, and Kololi.",
-    location: "Serekunda", verified: true, rating: 4.5, reviewCount: 22, completedJobs: 46, yearsActive: 6,
-    phone: "+220 7090123",
-    services: ["Split Unit Installation", "AC Cleaning", "Breakdown Repairs", "Annual Contracts"],
-  },
-  {
-    id: "c11", name: "PowerGen Gambia", categoryIds: ["generators"],
-    description: "Specialists in generator supply, installation, and maintenance for hotels, hospitals, and factories. Authorized Perkins and Cummins dealer.",
-    location: "Kanifing", verified: true, rating: 4.8, reviewCount: 39, completedJobs: 82, yearsActive: 11,
-    phone: "+220 7001357",
-    services: ["Generator Supply", "Installation & Commission", "Preventive Maintenance", "Emergency Repairs", "Load Calculations"],
-  },
-  {
-    id: "c12", name: "Reliable Power Co", categoryIds: ["generators"],
-    description: "Practical generator solutions for small and medium businesses. We source, install and maintain diesel generators from 5KVA to 100KVA.",
-    location: "Banjul", verified: true, rating: 4.3, reviewCount: 15, completedJobs: 29, yearsActive: 5,
-    phone: "+220 7002468",
-    services: ["Generator Sales", "Installation", "Servicing", "Fuel Management"],
-  },
-  {
-    id: "c13", name: "Artisan Painters Gambia", categoryIds: ["painting"],
-    description: "High-quality interior and exterior painting for commercial and residential properties. Trained in modern techniques including textured finishes and anti-mold coatings.",
-    location: "Serekunda", verified: true, rating: 4.7, reviewCount: 26, completedJobs: 58, yearsActive: 8,
-    phone: "+220 7003579",
-    services: ["Interior Painting", "Exterior Painting", "Textured Finishes", "Waterproofing Coatings", "Epoxy Floors"],
-  },
-  {
-    id: "c14", name: "Gambia Master Carpenters", categoryIds: ["carpentry"],
-    description: "The finest custom carpentry in The Gambia. From hotel reception desks to bespoke home furniture, our craftsmen deliver exceptional quality using locally sourced hardwoods.",
-    location: "Banjul", verified: true, rating: 4.9, reviewCount: 44, completedJobs: 97, yearsActive: 15,
-    phone: "+220 7004680",
-    services: ["Custom Furniture", "Kitchen Cabinets", "Doors & Windows", "Roofing Frames", "Office Fitouts"],
-  },
-  {
-    id: "c15", name: "Green Gambia Landscapes", categoryIds: ["landscaping"],
-    description: "Professional garden design and landscaping for hotels, resorts, and private estates. We create beautiful outdoor spaces that thrive in The Gambia's tropical climate.",
-    location: "Kololi", verified: true, rating: 4.6, reviewCount: 21, completedJobs: 45, yearsActive: 7,
-    phone: "+220 7005791",
-    services: ["Garden Design", "Lawn Maintenance", "Irrigation Systems", "Tree Planting", "Hardscaping"],
-  },
-];
+function apiCompanyToCompany(c: ApiCompany): Company {
+  return {
+    id: c.id, name: c.name, categoryIds: c.categoryIds,
+    description: c.description, location: c.location,
+    verified: c.verified, rating: c.rating, reviewCount: c.reviewCount,
+    completedJobs: c.completedJobs, yearsActive: c.yearsActive,
+    phone: c.phone, services: c.services,
+  };
+}
 
-export const MOCK_REVIEWS: Review[] = [
-  { id: "r1", companyId: "c1", userId: "u1", userName: "Fatou Jallow", rating: 5, comment: "Excellent work on our hotel's electrical system. Very professional and completed on time.", date: "2026-03-15" },
-  { id: "r2", companyId: "c1", userId: "u2", userName: "Lamin Dibba", rating: 5, comment: "Fixed our distribution board quickly. Would highly recommend to any business.", date: "2026-02-28" },
-  { id: "r3", companyId: "c2", userId: "u14", userName: "Nyima Jallow", rating: 4, comment: "Good electrical team. Completed the rewiring of our office efficiently.", date: "2026-04-08" },
-  { id: "r4", companyId: "c3", userId: "u11", userName: "Binta Jammeh", rating: 5, comment: "Westside fixed a major leak in our hotel quickly. Called them at 10pm and they responded.", date: "2026-03-30" },
-  { id: "r5", companyId: "c5", userId: "u3", userName: "Aminata Ceesay", rating: 5, comment: "SecureVision installed 24 cameras across our property. Exceptional service and clean cabling.", date: "2026-04-02" },
-  { id: "r6", companyId: "c5", userId: "u4", userName: "Omar Sanneh", rating: 5, comment: "The best CCTV company in Banjul. Professional team, great pricing.", date: "2026-03-18" },
-  { id: "r7", companyId: "c5", userId: "u16", userName: "Seedy Drammeh", rating: 5, comment: "Highly professional installation. Our school now has full coverage.", date: "2026-01-22" },
-  { id: "r8", companyId: "c7", userId: "u5", userName: "Isatou Touray", rating: 5, comment: "ProClean transformed our office. Spotless results and they brought all their own equipment.", date: "2026-04-10" },
-  { id: "r9", companyId: "c7", userId: "u6", userName: "Bakary Gaye", rating: 4, comment: "Good service overall. Thorough cleaning and the team was polite and efficient.", date: "2026-03-25" },
-  { id: "r10", companyId: "c9", userId: "u7", userName: "Mariama Barry", rating: 5, comment: "Installed 8 AC units in our guesthouse. Great workmanship and competitive pricing.", date: "2026-03-08" },
-  { id: "r11", companyId: "c10", userId: "u15", userName: "Pa Sowe", rating: 4, comment: "Quick response for our AC breakdown. Fixed it same day which was impressive.", date: "2026-03-12" },
-  { id: "r12", companyId: "c11", userId: "u8", userName: "Ousman Jobe", rating: 5, comment: "PowerGen handled our 100KVA generator installation perfectly. Reliable and professional.", date: "2026-04-15" },
-  { id: "r13", companyId: "c13", userId: "u12", userName: "Sering Ndong", rating: 5, comment: "Beautiful textured finish on our walls. The team was tidy and worked quickly.", date: "2026-04-05" },
-  { id: "r14", companyId: "c14", userId: "u9", userName: "Hawa Kanteh", rating: 5, comment: "Our custom reception desk and cabinets are stunning. True craftsmen.", date: "2026-04-01" },
-  { id: "r15", companyId: "c14", userId: "u10", userName: "Modou Faye", rating: 5, comment: "Best carpenters in The Gambia, no question. Delivered exactly what we wanted.", date: "2026-02-20" },
-  { id: "r16", companyId: "c15", userId: "u13", userName: "Adama Camara", rating: 5, comment: "Our resort gardens look incredible after Green Gambia redesigned them. Truly talented.", date: "2026-03-22" },
-];
+function apiQuoteToQuote(q: ApiQuote): QuoteRequest {
+  return {
+    id: q.id, companyId: q.companyId, companyName: q.companyName,
+    categoryId: q.categoryId, categoryName: q.categoryName,
+    description: q.description, location: q.location, status: q.status,
+    amount: q.amount ?? undefined,
+    createdAt: typeof q.createdAt === "string" ? q.createdAt : new Date(q.createdAt).toISOString(),
+  };
+}
+
+function apiJobToJob(j: ApiJob): Job {
+  return {
+    id: j.id, companyId: j.companyId, companyName: j.companyName,
+    categoryId: j.categoryId, categoryName: j.categoryName,
+    description: j.description, location: j.location, status: j.status,
+    amount: j.amount,
+    scheduledDate: j.scheduledDate ?? undefined,
+    completedDate: j.completedDate ?? undefined,
+    createdAt: typeof j.createdAt === "string" ? j.createdAt : new Date(j.createdAt).toISOString(),
+    reviewed: j.reviewed, paymentStatus: j.paymentStatus,
+    paymentMethod: j.paymentMethod ?? undefined,
+    transactionRef: j.transactionRef ?? undefined,
+    paidAt: j.paidAt ?? undefined,
+  };
+}
 
 interface AppContextType {
   categories: ServiceCategory[];
   companies: Company[];
+  loadingCompanies: boolean;
+  reloadCompanies: () => Promise<void>;
   getCompany: (id: string) => Company | undefined;
   getCompaniesByCategory: (categoryId: string) => Company[];
   getReviews: (companyId: string) => Review[];
+  loadReviews: (companyId: string) => Promise<void>;
   getCompaniesForProvider: (companyId?: string) => Company[];
   getQuotesForProvider: (companyId?: string) => QuoteRequest[];
   getJobsForProvider: (companyId?: string) => Job[];
   addCompany: (data: {
-    name: string;
-    email?: string;
-    phone: string;
-    categoryIds: string[];
-    description: string;
-    location: string;
-    services: string[];
-    yearsActive: number;
+    name: string; email?: string; phone: string; categoryIds: string[];
+    description: string; location: string; services: string[]; yearsActive: number;
   }) => Company;
   isCompanyEmailTaken: (email: string) => boolean;
   isCompanyPhoneTaken: (phone: string) => boolean;
   quotes: QuoteRequest[];
-  addQuote: (quote: Omit<QuoteRequest, "id" | "createdAt">) => void;
-  updateQuoteStatus: (id: string, status: QuoteRequest["status"], amount?: number) => void;
+  loadQuotes: (userId: string) => Promise<void>;
+  addQuote: (userId: string, quote: Omit<QuoteRequest, "id" | "createdAt">) => Promise<void>;
+  updateQuoteStatus: (id: string, status: QuoteRequest["status"], amount?: number) => Promise<void>;
   jobs: Job[];
-  addJob: (job: Omit<Job, "id" | "createdAt" | "reviewed">) => void;
-  updateJobStatus: (id: string, status: Job["status"]) => void;
-  addReview: (review: Omit<Review, "id" | "date">) => void;
-  markJobReviewed: (jobId: string) => void;
-  markJobPaid: (jobId: string, paymentMethod: string, transactionRef: string) => void;
+  loadJobs: (userId: string) => Promise<void>;
+  addJob: (userId: string, job: Omit<Job, "id" | "createdAt" | "reviewed">) => Promise<void>;
+  updateJobStatus: (id: string, status: Job["status"]) => Promise<void>;
+  addReview: (review: Omit<Review, "id" | "date">) => Promise<void>;
+  markJobReviewed: (jobId: string) => Promise<void>;
+  markJobPaid: (jobId: string, paymentMethod: string, transactionRef: string) => Promise<void>;
   userReviews: Review[];
 }
 
 const AppContext = createContext<AppContextType>({
-  categories: CATEGORIES,
-  companies: COMPANIES,
-  getCompany: () => undefined,
-  getCompaniesByCategory: () => [],
-  getReviews: () => [],
-  getCompaniesForProvider: () => [],
-  getQuotesForProvider: () => [],
-  getJobsForProvider: () => [],
-  addCompany: () => { throw new Error("addCompany not initialized"); },
-  isCompanyEmailTaken: () => false,
-  isCompanyPhoneTaken: () => false,
-  quotes: [],
-  addQuote: () => {},
-  updateQuoteStatus: () => {},
-  jobs: [],
-  addJob: () => {},
-  updateJobStatus: () => {},
-  addReview: () => {},
-  markJobReviewed: () => {},
-  markJobPaid: () => {},
+  categories: CATEGORIES, companies: [], loadingCompanies: true,
+  reloadCompanies: async () => {},
+  getCompany: () => undefined, getCompaniesByCategory: () => [],
+  getReviews: () => [], loadReviews: async () => {},
+  getCompaniesForProvider: () => [], getQuotesForProvider: () => [], getJobsForProvider: () => [],
+  addCompany: () => { throw new Error("not initialized"); },
+  isCompanyEmailTaken: () => false, isCompanyPhoneTaken: () => false,
+  quotes: [], loadQuotes: async () => {},
+  addQuote: async () => {}, updateQuoteStatus: async () => {},
+  jobs: [], loadJobs: async () => {},
+  addJob: async () => {}, updateJobStatus: async () => {},
+  addReview: async () => {}, markJobReviewed: async () => {}, markJobPaid: async () => {},
   userReviews: [],
 });
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(true);
+  const [reviewsCache, setReviewsCache] = useState<Record<string, Review[]>>({});
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [userReviews, setUserReviews] = useState<Review[]>([]);
-  const [extraCompanies, setExtraCompanies] = useState<Company[]>([]);
 
-  useEffect(() => {
-    Promise.all([
-      AsyncStorage.getItem("xomo_quotes"),
-      AsyncStorage.getItem("xomo_jobs"),
-      AsyncStorage.getItem("xomo_user_reviews"),
-      AsyncStorage.getItem("xomo_extra_companies"),
-    ]).then(([q, j, r, ec]) => {
-      if (q) setQuotes(JSON.parse(q));
-      if (j) setJobs(JSON.parse(j));
-      if (r) setUserReviews(JSON.parse(r));
-      if (ec) setExtraCompanies(JSON.parse(ec));
-    }).catch(() => {});
+  const reloadCompanies = useCallback(async () => {
+    setLoadingCompanies(true);
+    try {
+      const data = await fetchCompanies();
+      const mapped = data.map(apiCompanyToCompany);
+      setCompanies(mapped);
+      AsyncStorage.setItem("xomo_companies_cache", JSON.stringify(mapped)).catch(() => {});
+    } catch {
+      const cached = await AsyncStorage.getItem("xomo_companies_cache").catch(() => null);
+      if (cached) setCompanies(JSON.parse(cached));
+    } finally {
+      setLoadingCompanies(false);
+    }
   }, []);
 
-  const saveQuotes = useCallback((updated: QuoteRequest[]) => {
-    setQuotes(updated);
-    AsyncStorage.setItem("xomo_quotes", JSON.stringify(updated)).catch(() => {});
+  useEffect(() => { reloadCompanies(); }, [reloadCompanies]);
+
+  const loadReviews = useCallback(async (companyId: string) => {
+    try {
+      const data = await fetchReviews(companyId);
+      setReviewsCache((prev) => ({ ...prev, [companyId]: data }));
+    } catch {}
   }, []);
 
-  const saveJobs = useCallback((updated: Job[]) => {
-    setJobs(updated);
-    AsyncStorage.setItem("xomo_jobs", JSON.stringify(updated)).catch(() => {});
+  const loadQuotes = useCallback(async (userId: string) => {
+    try {
+      const data = await fetchQuotes(userId);
+      setQuotes(data.map(apiQuoteToQuote));
+    } catch {
+      const cached = await AsyncStorage.getItem(`xomo_quotes_${userId}`).catch(() => null);
+      if (cached) setQuotes(JSON.parse(cached));
+    }
   }, []);
 
-  const saveUserReviews = useCallback((updated: Review[]) => {
-    setUserReviews(updated);
-    AsyncStorage.setItem("xomo_user_reviews", JSON.stringify(updated)).catch(() => {});
+  const loadJobs = useCallback(async (userId: string) => {
+    try {
+      const data = await fetchJobs(userId);
+      setJobs(data.map(apiJobToJob));
+    } catch {
+      const cached = await AsyncStorage.getItem(`xomo_jobs_${userId}`).catch(() => null);
+      if (cached) setJobs(JSON.parse(cached));
+    }
   }, []);
 
-  const allCompanies = [...COMPANIES, ...extraCompanies];
+  const getCompany = useCallback((id: string) => companies.find((c) => c.id === id), [companies]);
 
-  const addCompany = useCallback(
-    (data: {
-      name: string;
-      email?: string;
-      phone: string;
-      categoryIds: string[];
-      description: string;
-      location: string;
-      services: string[];
-      yearsActive: number;
-    }): Company => {
-      const newCompany: Company = {
-        ...data,
-        id: "p" + Date.now().toString() + Math.random().toString(36).substring(2, 6),
-        verified: false,
-        rating: 0,
-        reviewCount: 0,
-        completedJobs: 0,
-      };
-      const updated = [...extraCompanies, newCompany];
-      setExtraCompanies(updated);
-      AsyncStorage.setItem("xomo_extra_companies", JSON.stringify(updated)).catch(() => {});
-      return newCompany;
-    },
-    [extraCompanies]
-  );
-
-  const isCompanyEmailTaken = useCallback(
-    (email: string) => {
-      const needle = email.trim().toLowerCase();
-      if (!needle) return false;
-      return allCompanies.some((company) => (company as any).email?.toLowerCase() === needle);
-    },
-    [allCompanies]
-  );
-
-  const isCompanyPhoneTaken = useCallback(
-    (phone: string) => {
-      const needle = phone.replace(/\D/g, "");
-      if (!needle) return false;
-      return allCompanies.some((company) => company.phone.replace(/\D/g, "") === needle);
-    },
-    [allCompanies]
-  );
-
-  const getCompany = useCallback((id: string) => allCompanies.find((c) => c.id === id), [allCompanies]);
   const getCompaniesForProvider = useCallback(
-    (companyId?: string) => (companyId ? allCompanies.filter((c) => c.id === companyId) : []),
-    [allCompanies]
+    (companyId?: string) => (companyId ? companies.filter((c) => c.id === companyId) : []),
+    [companies]
   );
+
   const getQuotesForProvider = useCallback(
     (companyId?: string) => (companyId ? quotes.filter((q) => q.companyId === companyId) : []),
     [quotes]
   );
+
   const getJobsForProvider = useCallback(
     (companyId?: string) => (companyId ? jobs.filter((j) => j.companyId === companyId) : []),
     [jobs]
   );
 
   const getCompaniesByCategory = useCallback(
-    (categoryId: string) => allCompanies.filter((c) => c.categoryIds.includes(categoryId)),
-    [allCompanies]
+    (categoryId: string) => companies.filter((c) => c.categoryIds.includes(categoryId)),
+    [companies]
   );
 
   const getReviews = useCallback(
     (companyId: string) => [
-      ...MOCK_REVIEWS.filter((r) => r.companyId === companyId),
+      ...(reviewsCache[companyId] ?? []),
       ...userReviews.filter((r) => r.companyId === companyId),
     ],
-    [userReviews]
+    [reviewsCache, userReviews]
   );
 
-  const addQuote = useCallback(
-    (quote: Omit<QuoteRequest, "id" | "createdAt">) => {
-      const newQuote: QuoteRequest = {
+  const addCompany = useCallback(
+    (data: { name: string; email?: string; phone: string; categoryIds: string[]; description: string; location: string; services: string[]; yearsActive: number; }): Company => {
+      const newCompany: Company = {
+        ...data, id: "p" + Date.now().toString() + Math.random().toString(36).substring(2, 6),
+        verified: false, rating: 0, reviewCount: 0, completedJobs: 0,
+      };
+      setCompanies((prev) => [...prev, newCompany]);
+      return newCompany;
+    },
+    []
+  );
+
+  const isCompanyEmailTaken = useCallback(
+    (email: string) => {
+      const needle = email.trim().toLowerCase();
+      if (!needle) return false;
+      return companies.some((c) => (c as Company & { email?: string }).email?.toLowerCase() === needle);
+    },
+    [companies]
+  );
+
+  const isCompanyPhoneTaken = useCallback(
+    (phone: string) => {
+      const needle = phone.replace(/\D/g, "");
+      if (!needle) return false;
+      return companies.some((c) => c.phone.replace(/\D/g, "") === needle);
+    },
+    [companies]
+  );
+
+  const addQuote = useCallback(async (userId: string, quote: Omit<QuoteRequest, "id" | "createdAt">) => {
+    try {
+      const created = await createQuote({
+        userId, companyId: quote.companyId, companyName: quote.companyName,
+        categoryId: quote.categoryId, categoryName: quote.categoryName,
+        description: quote.description, location: quote.location,
+        status: quote.status, amount: quote.amount ?? null,
+      });
+      setQuotes((prev) => [apiQuoteToQuote(created), ...prev]);
+    } catch {
+      const local: QuoteRequest = {
         ...quote,
         id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
         createdAt: new Date().toISOString(),
       };
-      saveQuotes([newQuote, ...quotes]);
-    },
-    [quotes, saveQuotes]
-  );
+      setQuotes((prev) => [local, ...prev]);
+    }
+  }, []);
 
-  const updateQuoteStatus = useCallback(
-    (id: string, status: QuoteRequest["status"], amount?: number) => {
-      saveQuotes(quotes.map((q) => (q.id === id ? { ...q, status, ...(amount !== undefined ? { amount } : {}) } : q)));
-    },
-    [quotes, saveQuotes]
-  );
+  const handleUpdateQuoteStatus = useCallback(async (id: string, status: QuoteRequest["status"], amount?: number) => {
+    try {
+      const updated = await updateQuote(id, { status, ...(amount !== undefined ? { amount } : {}) });
+      setQuotes((prev) => prev.map((q) => (q.id === id ? apiQuoteToQuote(updated) : q)));
+    } catch {
+      setQuotes((prev) => prev.map((q) => (q.id === id ? { ...q, status, ...(amount !== undefined ? { amount } : {}) } : q)));
+    }
+  }, []);
 
-  const addJob = useCallback(
-    (job: Omit<Job, "id" | "createdAt" | "reviewed">) => {
-      const newJob: Job = {
+  const addJob = useCallback(async (userId: string, job: Omit<Job, "id" | "createdAt" | "reviewed">) => {
+    try {
+      const created = await createJob({
+        userId, companyId: job.companyId, companyName: job.companyName,
+        categoryId: job.categoryId, categoryName: job.categoryName,
+        description: job.description, location: job.location,
+        status: job.status, amount: job.amount,
+        scheduledDate: job.scheduledDate ?? null,
+        paymentStatus: job.paymentStatus ?? "unpaid",
+        paymentMethod: job.paymentMethod ?? null,
+        transactionRef: job.transactionRef ?? null,
+        paidAt: job.paidAt ?? null,
+      });
+      setJobs((prev) => [apiJobToJob(created), ...prev]);
+    } catch {
+      const local: Job = {
         ...job,
         id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
         createdAt: new Date().toISOString(),
         reviewed: false,
       };
-      saveJobs([newJob, ...jobs]);
-    },
-    [jobs, saveJobs]
-  );
+      setJobs((prev) => [local, ...prev]);
+    }
+  }, []);
 
-  const updateJobStatus = useCallback(
-    (id: string, status: Job["status"]) => {
-      saveJobs(
-        jobs.map((j) =>
+  const handleUpdateJobStatus = useCallback(async (id: string, status: Job["status"]) => {
+    try {
+      const updated = await updateJobStatus(id, status);
+      setJobs((prev) => prev.map((j) => (j.id === id ? apiJobToJob(updated) : j)));
+    } catch {
+      setJobs((prev) =>
+        prev.map((j) =>
           j.id === id
             ? { ...j, status, ...(status === "completed" ? { completedDate: new Date().toISOString() } : {}) }
             : j
         )
       );
-    },
-    [jobs, saveJobs]
-  );
+    }
+  }, []);
 
-  const addReview = useCallback(
-    (review: Omit<Review, "id" | "date">) => {
-      const newReview: Review = {
+  const addReview = useCallback(async (review: Omit<Review, "id" | "date">) => {
+    try {
+      const created = await postReview(review.companyId, {
+        userId: review.userId, userName: review.userName,
+        rating: review.rating, comment: review.comment,
+      });
+      setUserReviews((prev) => [...prev, created]);
+      setReviewsCache((prev) => ({
+        ...prev,
+        [review.companyId]: [...(prev[review.companyId] ?? []), created],
+      }));
+      await reloadCompanies();
+    } catch {
+      const local: Review = {
         ...review,
         id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
         date: new Date().toISOString().split("T")[0],
       };
-      saveUserReviews([...userReviews, newReview]);
-    },
-    [userReviews, saveUserReviews]
-  );
+      setUserReviews((prev) => [...prev, local]);
+    }
+  }, [reloadCompanies]);
 
-  const markJobReviewed = useCallback(
-    (jobId: string) => {
-      saveJobs(jobs.map((j) => (j.id === jobId ? { ...j, reviewed: true } : j)));
-    },
-    [jobs, saveJobs]
-  );
+  const markJobReviewed = useCallback(async (jobId: string) => {
+    try {
+      const updated = await markJobReviewedApi(jobId);
+      setJobs((prev) => prev.map((j) => (j.id === jobId ? apiJobToJob(updated) : j)));
+    } catch {
+      setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, reviewed: true } : j)));
+    }
+  }, []);
 
-  const markJobPaid = useCallback(
-    (jobId: string, paymentMethod: string, transactionRef: string) => {
-      saveJobs(
-        jobs.map((j) =>
+  const markJobPaid = useCallback(async (jobId: string, paymentMethod: string, transactionRef: string) => {
+    try {
+      const updated = await markJobPaidApi(jobId, paymentMethod, transactionRef);
+      setJobs((prev) => prev.map((j) => (j.id === jobId ? apiJobToJob(updated) : j)));
+    } catch {
+      setJobs((prev) =>
+        prev.map((j) =>
           j.id === jobId
             ? { ...j, paymentStatus: "paid", paymentMethod, transactionRef, paidAt: new Date().toISOString() }
             : j
         )
       );
-    },
-    [jobs, saveJobs]
-  );
+    }
+  }, []);
 
   return (
     <AppContext.Provider
       value={{
-        categories: CATEGORIES,
-        companies: allCompanies,
-        getCompany,
-        getCompaniesByCategory,
-      getReviews,
-      getCompaniesForProvider,
-      getQuotesForProvider,
-      getJobsForProvider,
-        addCompany,
-        isCompanyEmailTaken,
-        isCompanyPhoneTaken,
-        quotes,
-        addQuote,
-        updateQuoteStatus,
-        jobs,
-        addJob,
-        updateJobStatus,
-        addReview,
-        markJobReviewed,
-        markJobPaid,
-        userReviews,
+        categories: CATEGORIES, companies, loadingCompanies, reloadCompanies,
+        getCompany, getCompaniesByCategory, getReviews, loadReviews,
+        getCompaniesForProvider, getQuotesForProvider, getJobsForProvider,
+        addCompany, isCompanyEmailTaken, isCompanyPhoneTaken,
+        quotes, loadQuotes, addQuote, updateQuoteStatus: handleUpdateQuoteStatus,
+        jobs, loadJobs, addJob, updateJobStatus: handleUpdateJobStatus,
+        addReview, markJobReviewed, markJobPaid, userReviews,
       }}
     >
       {children}

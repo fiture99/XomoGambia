@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EmptyState } from "@/components/EmptyState";
@@ -12,7 +12,11 @@ export default function JobsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { jobs, getJobsForProvider } = useApp();
+  const { jobs, loadJobs, getJobsForProvider } = useApp();
+
+  useEffect(() => {
+    if (user?.id) loadJobs(user.id);
+  }, [user?.id, loadJobs]);
   const visibleJobs = user?.role === "provider" ? getJobsForProvider(user.companyId) : jobs;
 
   const active = useMemo(

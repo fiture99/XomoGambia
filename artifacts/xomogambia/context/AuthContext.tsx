@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { registerUser, loginUser, updateUserApi, type ApiUser } from "../lib/api";
 
 export type UserRole = "customer" | "provider";
 
@@ -11,8 +12,6 @@ export interface User {
   password?: string;
   companyId?: string;
 }
-
-type StoredUserMap = Record<string, User>;
 
 interface AuthContextType {
   user: User | null;
@@ -36,78 +35,100 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
 });
 
+function apiUserToUser(u: ApiUser, password?: string): User {
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    companyId: u.companyId ?? undefined,
+    password,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    AsyncStorage.getItem("xomo_users")
+    AsyncStorage.getItem("xomo_current_user")
       .then((data) => {
-        if (!data) return;
-        const users: StoredUserMap = JSON.parse(data);
-        const values = Object.values(users);
-        if (values.length > 0) setUser(values[values.length - 1]);
+        if (data) setUser(JSON.parse(data));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const readUsers = useCallback(async (): Promise<StoredUserMap> => {
-    const data = await AsyncStorage.getItem("xomo_users");
-    if (!data) return {};
-    return JSON.parse(data);
-  }, []);
-
-  const saveUsers = useCallback(async (users: StoredUserMap) => {
-    await AsyncStorage.setItem("xomo_users", JSON.stringify(users));
+  const persistUser = useCallback(async (u: User | null) => {
+    if (u) {
+      await AsyncStorage.setItem("xomo_current_user", JSON.stringify(u));
+    } else {
+      await AsyncStorage.removeItem("xomo_current_user");
+    }
+    setUser(u);
   }, []);
 
   async function login(name: string, email: string, role: UserRole, password?: string, companyId?: string) {
-    const newUser: User = {
-      id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
-      name,
-      email,
-      role,
-      password,
-      companyId,
-    };
-    const users = await readUsers();
-    users[newUser.email.toLowerCase()] = newUser;
-    await saveUsers(users);
-    setUser(newUser);
+    try {
+      const apiUser = await registerUser({ name, email, password, role, companyId });
+      await persistUser(apiUserToUser(apiUser, password));
+    } catch {
+      const fallback: User = {
+        id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
+        name, email, role, password, companyId,
+      };
+      await persistUser(fallback);
+    }
   }
 
   async function loginWithCredentials(email: string, password: string): Promise<boolean> {
-    const users = await readUsers();
-    const stored = users[email.toLowerCase()];
-    if (stored && stored.password === password) {
-      setUser(stored);
+    try {
+      const apiUser = await loginUser(email, password);
+      await persistUser(apiUserToUser(apiUser, password));
       return true;
+    } catch {
+      const data = await AsyncStorage.getItem("xomo_current_user");
+      if (data) {
+        const stored: User = JSON.parse(data);
+        if (stored.email.toLowerCase() === email.toLowerCase() && stored.password === password) {
+          setUser(stored);
+          return true;
+        }
+      }
+      return false;
     }
-    return false;
   }
 
   async function getStoredUser(email: string): Promise<User | null> {
-    const users = await readUsers();
-    return users[email.toLowerCase()] ?? null;
+    try {
+      const apiUser = await loginUser(email);
+      return apiUserToUser(apiUser);
+    } catch {
+      return null;
+    }
   }
 
   async function getLastUser(): Promise<User | null> {
-    const users = await readUsers();
-    const values = Object.values(users);
-    return values.length > 0 ? values[values.length - 1] : null;
+    const data = await AsyncStorage.getItem("xomo_current_user");
+    return data ? JSON.parse(data) : null;
   }
 
   async function updateUser(updates: Partial<User>) {
     if (!user) return;
-    const updated = { ...user, ...updates };
-    const users = await readUsers();
-    users[updated.email.toLowerCase()] = updated;
-    await saveUsers(users);
-    setUser(updated);
+    try {
+      const apiUser = await updateUserApi(user.id, {
+        name: updates.name,
+        companyId: updates.companyId ?? null,
+        role: updates.role,
+      });
+      await persistUser({ ...apiUserToUser(apiUser, user.password), password: updates.password ?? user.password });
+    } catch {
+      await persistUser({ ...user, ...updates });
+    }
   }
 
   async function logout() {
+    await AsyncStorage.removeItem("xomo_current_user");
     setUser(null);
   }
 
