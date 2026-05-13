@@ -69,16 +69,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function login(name: string, email: string, role: UserRole, password?: string, companyId?: string) {
-    try {
-      const apiUser = await registerUser({ name, email, password, role, companyId });
-      await persistUser(apiUserToUser(apiUser, password));
-    } catch {
-      const fallback: User = {
-        id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
-        name, email, role, password, companyId,
-      };
-      await persistUser(fallback);
-    }
+    const apiUser = await registerUser({ name, email, password, role, companyId });
+    await persistUser(apiUserToUser(apiUser, password));
   }
 
   async function loginWithCredentials(email: string, password: string): Promise<boolean> {
