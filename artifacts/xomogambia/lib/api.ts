@@ -10,10 +10,13 @@ export function getApiBase(): string {
       const mainHost = host.replace(".expo.", ".");
       return `https://${mainHost}`;
     }
+    if (host === "localhost" || host === "127.0.0.1") {
+      return "http://localhost:8080";
+    }
     return window.location.origin;
   }
 
-  return "";
+  return "http://localhost:8080";
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
