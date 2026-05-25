@@ -29,9 +29,11 @@ function useProtectedRoute() {
     const onPublicScreen =
       segments[0] === "onboarding" || segments[0] === "auth" || segments[0] === "provider";
     if (!user && !onPublicScreen) {
-      router.replace(hasRegistered ? "/auth?mode=login" : "/onboarding");
+      const t = setTimeout(() => router.replace(hasRegistered ? "/auth?mode=login" : "/onboarding"), 0);
+      return () => clearTimeout(t);
     } else if (user && (segments[0] === "onboarding" || segments[0] === "auth")) {
-      router.replace("/(tabs)");
+      const t = setTimeout(() => router.replace("/(tabs)"), 0);
+      return () => clearTimeout(t);
     }
   }, [user, loading, hasRegistered, segments[0]]);
 }
