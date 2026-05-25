@@ -61,7 +61,11 @@ export default function AuthScreen() {
     if (ok) {
       const stored = user ?? (await getLastUser());
       if (stored) {
-        router.replace(stored.role === "provider" ? "/(tabs)" : "/(tabs)");
+        if (stored.role === "provider" && !stored.companyId) {
+          router.replace("/provider/register");
+        } else {
+          router.replace("/(tabs)");
+        }
       } else {
         setError("No saved account was found. Please sign in with your password first.");
       }
