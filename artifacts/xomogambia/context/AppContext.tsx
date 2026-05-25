@@ -2,8 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import {
   fetchCompanies, fetchReviews, postReview,
-  fetchQuotes, createQuote, updateQuote,
-  fetchJobs, createJob, updateJobStatus,
+  fetchQuotes, fetchProviderQuotes, createQuote, updateQuote,
+  fetchJobs, fetchProviderJobs, createJob, updateJobStatus,
   markJobReviewedApi, markJobPaidApi,
   type ApiCompany, type ApiReview, type ApiQuote, type ApiJob,
 } from "../lib/api";
@@ -142,11 +142,11 @@ interface AppContextType {
   isCompanyEmailTaken: (email: string) => boolean;
   isCompanyPhoneTaken: (phone: string) => boolean;
   quotes: QuoteRequest[];
-  loadQuotes: (userId: string) => Promise<void>;
+  loadQuotes: (userId: string, companyId?: string) => Promise<void>;
   addQuote: (userId: string, quote: Omit<QuoteRequest, "id" | "createdAt">) => Promise<void>;
   updateQuoteStatus: (id: string, status: QuoteRequest["status"], amount?: number) => Promise<void>;
   jobs: Job[];
-  loadJobs: (userId: string) => Promise<void>;
+  loadJobs: (userId: string, companyId?: string) => Promise<void>;
   addJob: (userId: string, job: Omit<Job, "id" | "createdAt" | "reviewed">) => Promise<void>;
   updateJobStatus: (id: string, status: Job["status"]) => Promise<void>;
   addReview: (review: Omit<Review, "id" | "date">) => Promise<void>;
@@ -203,22 +203,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, []);
 
-  const loadQuotes = useCallback(async (userId: string) => {
+  const loadQuotes = useCallback(async (userId: string, companyId?: string) => {
     try {
-      const data = await fetchQuotes(userId);
+      const data = companyId ? await fetchProviderQuotes(companyId) : await fetchQuotes(userId);
       setQuotes(data.map(apiQuoteToQuote));
     } catch {
-      const cached = await AsyncStorage.getItem(`xomo_quotes_${userId}`).catch(() => null);
+      const cacheKey = companyId ? `xomo_quotes_company_${companyId}` : `xomo_quotes_${userId}`;
+      const cached = await AsyncStorage.getItem(cacheKey).catch(() => null);
       if (cached) setQuotes(JSON.parse(cached));
     }
   }, []);
 
-  const loadJobs = useCallback(async (userId: string) => {
+  const loadJobs = useCallback(async (userId: string, companyId?: string) => {
     try {
-      const data = await fetchJobs(userId);
+      const data = companyId ? await fetchProviderJobs(companyId) : await fetchJobs(userId);
       setJobs(data.map(apiJobToJob));
     } catch {
-      const cached = await AsyncStorage.getItem(`xomo_jobs_${userId}`).catch(() => null);
+      const cacheKey = companyId ? `xomo_jobs_company_${companyId}` : `xomo_jobs_${userId}`;
+      const cached = await AsyncStorage.getItem(cacheKey).catch(() => null);
       if (cached) setJobs(JSON.parse(cached));
     }
   }, []);

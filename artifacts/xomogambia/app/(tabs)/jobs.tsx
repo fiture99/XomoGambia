@@ -15,8 +15,8 @@ export default function JobsScreen() {
   const { jobs, loadJobs, getJobsForProvider } = useApp();
 
   useEffect(() => {
-    if (user?.id) loadJobs(user.id);
-  }, [user?.id, loadJobs]);
+    if (user?.id) loadJobs(user.id, user.role === "provider" ? user.companyId : undefined);
+  }, [user?.id, user?.companyId, user?.role, loadJobs]);
   const visibleJobs = user?.role === "provider" ? getJobsForProvider(user.companyId) : jobs;
 
   const active = useMemo(

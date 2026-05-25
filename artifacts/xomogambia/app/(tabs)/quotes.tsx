@@ -15,8 +15,8 @@ export default function QuotesScreen() {
   const { quotes, loadQuotes, getQuotesForProvider } = useApp();
 
   useEffect(() => {
-    if (user?.id) loadQuotes(user.id);
-  }, [user?.id, loadQuotes]);
+    if (user?.id) loadQuotes(user.id, user.role === "provider" ? user.companyId : undefined);
+  }, [user?.id, user?.companyId, user?.role, loadQuotes]);
   const visibleQuotes = user?.role === "provider" ? getQuotesForProvider(user.companyId) : quotes;
 
   const active = useMemo(
