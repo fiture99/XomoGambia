@@ -101,7 +101,11 @@ export default function AuthScreen() {
         const stored = await getStoredUser(email.trim());
         const ok = await loginWithCredentials(email.trim(), password);
         if (ok && stored) {
-          router.replace("/(tabs)");
+          if (stored.role === "provider" && !stored.companyId) {
+            router.replace("/provider/register");
+          } else {
+            router.replace("/(tabs)");
+          }
         } else {
           setError("Incorrect email or password. Please try again.");
         }
