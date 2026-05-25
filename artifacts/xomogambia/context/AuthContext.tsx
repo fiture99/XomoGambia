@@ -16,6 +16,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  hasRegistered: boolean;
   login: (name: string, email: string, role: UserRole, password?: string, companyId?: string) => Promise<void>;
   loginWithCredentials: (email: string, password: string) => Promise<boolean>;
   getStoredUser: (email: string) => Promise<User | null>;
@@ -27,6 +28,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  hasRegistered: false,
   login: async () => {},
   loginWithCredentials: async () => false,
   getStoredUser: async () => null,
@@ -49,11 +51,16 @@ function apiUserToUser(u: ApiUser, password?: string): User {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasRegistered, setHasRegistered] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem("xomo_current_user")
-      .then((data) => {
-        if (data) setUser(JSON.parse(data));
+    Promise.all([
+      AsyncStorage.getItem("xomo_current_user"),
+      AsyncStorage.getItem("xomo_has_registered"),
+    ])
+      .then(([userData, registered]) => {
+        if (userData) setUser(JSON.parse(userData));
+        if (registered === "true") setHasRegistered(true);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -70,6 +77,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function login(name: string, email: string, role: UserRole, password?: string, companyId?: string) {
     const apiUser = await registerUser({ name, email, password, role, companyId });
+    await AsyncStorage.setItem("xomo_has_registered", "true");
+    setHasRegistered(true);
     await persistUser(apiUserToUser(apiUser, password));
   }
 
@@ -125,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginWithCredentials, getStoredUser, getLastUser, updateUser, logout }}>
+    <AuthContext.Provider value={{ user, loading, hasRegistered, login, loginWithCredentials, getStoredUser, getLastUser, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

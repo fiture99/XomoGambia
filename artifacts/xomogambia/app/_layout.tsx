@@ -21,7 +21,7 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function useProtectedRoute() {
-  const { user, loading } = useAuth();
+  const { user, loading, hasRegistered } = useAuth();
   const segments = useSegments();
 
   useEffect(() => {
@@ -29,11 +29,11 @@ function useProtectedRoute() {
     const onPublicScreen =
       segments[0] === "onboarding" || segments[0] === "auth" || segments[0] === "provider";
     if (!user && !onPublicScreen) {
-      router.replace("/onboarding");
+      router.replace(hasRegistered ? "/auth?mode=login" : "/onboarding");
     } else if (user && (segments[0] === "onboarding" || segments[0] === "auth")) {
       router.replace("/(tabs)");
     }
-  }, [user, loading, segments[0]]);
+  }, [user, loading, hasRegistered, segments[0]]);
 }
 
 function RootLayoutNav() {
